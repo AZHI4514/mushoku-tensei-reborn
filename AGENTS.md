@@ -19,6 +19,7 @@
 | Java | 21（Temurin JDK，Gradle toolchain 可自动下载） |
 | 构建 | Gradle wrapper（`./gradlew`，禁止裸 `gradle`） |
 | Gradle 插件 | ModDevGradle |
+| 3D 动画库 | GeckoLib 4.7.x（NeoForge 1.21.1），硬依赖 |
 
 ## 命令
 
@@ -102,7 +103,9 @@ src/main/resources/
 
 ```
 切片0 项目骨架（Gradle/入口/空 registry/契约跑通）
-切片1 魔力值 + 一个法术 + 咏唱施放（最小闭环）
+切片1a 魔力（DataAttachment）
+切片1b 徒手水弹（R 键咏唱、服务端判定）
+切片1c 3D 动画弹体（GeckoLib）
 切片2 等级与属性矩阵（多法术、熟练度）
 切片3 咏唱缩短 → 省略咏唱（成长曲线）
 切片4 混合魔术（水+土 泥沼）
