@@ -8,9 +8,9 @@ Java 21、Minecraft 1.21.1、NeoForge 21.1.267、ModDevGradle 2.0.148、Gradle W
 
 ### 任务 1 · 验证 Blockbench MCP 链路（10–15 分钟，无前置）
 
-直接用已配置的 MCP 在 Blockbench 创建单立方体，以 GeckoLib 导出器写到 `src/main/resources/assets/mushoku_tensei_reborn/geo/mcp_probe.geo.json`。本项不写代码。重新从磁盘读取，用现有 JSON 解析器确认文件可解析、有立方体几何，且顶层 `format_version` 是以 `geometry.geckolib` 开头的字符串。记录导出路径、实际字段值和解析结果。导出器名称、编辑器项目格式与导出 JSON 的字段分别核对。
+用 Blockbench MCP 导出单立方体到 `src/main/resources/assets/mushoku_tensei_reborn/geo/mcp_probe.geo.json`。验收磁盘上的 JSON：顶层 `format_version` 为字符串 `"1.12.0"`，存在非空 `minecraft:geometry` 数组，每条均含 `description` 和 `bones`，骨骼中至少一条含 `pivot` 和 `cubes`。GeckoLib 4 使用 Bedrock 实体几何格式；原门槛误用了旧版 GeckoLib 3 的前缀。
 
-任一条件失败即停，报告 MCP 操作、导出器名称、实际字段及错误。即使文件给出有效的数值版本字符串，也按本次指定门槛报告差异，不手改产物制造通过结果。成功后清理探针文件，正式 jar 只交付水弹资源。
+原探针已按修订门槛通过，含一条骨骼和一个立方体。验收后从资源目录删除探针。
 
 ### 任务 2 · 接入 GeckoLib 依赖并验证 build（15–25 分钟，无前置，可与任务 1 并行）
 

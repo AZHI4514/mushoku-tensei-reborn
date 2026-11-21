@@ -10,7 +10,15 @@ java.toolchain {
     vendor = JvmVendorSpec.ADOPTIUM
 }
 
-repositories { mavenCentral() }
+repositories {
+    mavenCentral()
+    exclusiveContent {
+        forRepository {
+            maven { url = uri('https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/') }
+        }
+        filter { includeGroup 'software.bernie.geckolib' }
+    }
+}
 
 sourceSets {
     gameTest {
@@ -20,6 +28,7 @@ sourceSets {
 }
 
 dependencies {
+    implementation 'software.bernie.geckolib:geckolib-neoforge-1.21.1:4.7.7'
     testImplementation platform('org.junit:junit-bom:5.13.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
