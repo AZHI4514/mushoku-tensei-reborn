@@ -2,6 +2,7 @@ package com.azhi.mushoku.client;
 
 import com.azhi.mushoku.Mushoku;
 import com.azhi.mushoku.magic.runtime.ChantPackets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import net.minecraft.client.KeyMapping;
@@ -39,7 +40,9 @@ public final class ClientChant {
         }
     }
 
-    public static void receive(ChantPackets.State state) {
+    @SubscribeEvent
+    public static void receive(ChantPackets.StateReceived event) {
+        var state = event.state;
         useLevel(Minecraft.getInstance().level);
         if (level == null) return;
         if (state.phase() == ChantPackets.Phase.CHANTING) {
@@ -68,8 +71,12 @@ public final class ClientChant {
             held = pressed;
         }
         if (mc.isPaused()) return;
+        var staleIds = new ArrayList<Integer>();
         CASTERS.forEach((id, display) -> {
-            if (!(level.getEntity(id) instanceof Player caster)) return;
+            if (!(level.getEntity(id) instanceof Player caster)) {
+                staleIds.add(id);
+                return;
+            }
             double elapsed = display.total - display.remaining + level.getGameTime() - display.receivedAt;
             double progress = Math.clamp(elapsed / display.total, 0.0, 1.0);
             double yaw = Math.toRadians(caster.yBodyRot);
@@ -80,5 +87,6 @@ public final class ClientChant {
                     caster.getEyeY() - 0.55,
                     caster.getZ() + Math.sin(yaw) * side + Math.cos(yaw) * reach, 0, 0, 0);
         });
+        staleIds.forEach(CASTERS::remove);
     }
 }

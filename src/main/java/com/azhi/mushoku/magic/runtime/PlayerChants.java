@@ -23,21 +23,24 @@ public final class PlayerChants {
     private static final AttributeModifier SLOW = new AttributeModifier(
             ResourceLocation.fromNamespaceAndPath(Mushoku.MOD_ID, "chant_slowdown"),
             -0.5, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
-    private static final Map<ServerPlayer, PlayerChants> ACTIVE = new HashMap<>();
+    private static final Map<UUID, PlayerChants> ACTIVE = new HashMap<>();
+    private final ServerPlayer owner;
     private final Chant chant = new Chant();
     private final Set<UUID> viewers = new HashSet<>();
 
-    private PlayerChants() {}
+    private PlayerChants(ServerPlayer owner) {
+        this.owner = owner;
+    }
 
     static void start(ServerPlayer player) {
-        if (ACTIVE.containsKey(player)) return;
-        var session = new PlayerChants();
+        if (ACTIVE.containsKey(player.getUUID())) return;
+        var session = new PlayerChants(player);
         var result = session.chant.start(player.getData(PlayerMana.MANA), player.isSpectator(), player.isAlive());
         if (result == Chant.Result.INSUFFICIENT_MANA) insufficientMana(player);
         if (result != Chant.Result.STARTED) return;
-        ACTIVE.put(player, session);
+        ACTIVE.put(player.getUUID(), session);
         player.getAttribute(Attributes.MOVEMENT_SPEED).addOrUpdateTransientModifier(SLOW);
-        session.broadcast(player);
+        session.broadcast();
     }
 
     private static void insufficientMana(ServerPlayer player) {
@@ -46,8 +49,8 @@ public final class PlayerChants {
 
     public static void tick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        var session = ACTIVE.get(player);
-        if (session == null) return;
+        var session = ACTIVE.get(player.getUUID());
+        if (session == null || session.owner != player) return;
         if (!player.isAlive() || player.isSpectator()) {
             interrupt(player);
             return;
@@ -57,56 +60,59 @@ public final class PlayerChants {
         switch (session.chant.tick(mana)) {
             case COMPLETED -> {
                 PlayerMana.set(player, Mana.spend(mana, Chant.COST));
-                session.finish(player, Phase.COMPLETED);
+                session.finish(Phase.COMPLETED);
             }
             case INSUFFICIENT_MANA -> {
                 insufficientMana(player);
-                session.finish(player, Phase.INTERRUPTED);
+                session.finish(Phase.INTERRUPTED);
             }
             default -> {
-                if (session.chant.remainingTicks() % 20 == 0) session.broadcast(player);
+                if (session.chant.remainingTicks() % 20 == 0) session.broadcast();
             }
         }
     }
 
-    private ChantPackets.State state(ServerPlayer player, Phase phase) {
-        return new ChantPackets.State(player.getId(), phase, Chant.DURATION_TICKS, chant.remainingTicks());
+    private ChantPackets.State state(Phase phase) {
+        return new ChantPackets.State(owner.getId(), phase, Chant.DURATION_TICKS, chant.remainingTicks());
     }
 
-    private void broadcast(ServerPlayer player) {
-        var snapshot = state(player, Phase.CHANTING);
+    private void broadcast() {
+        var snapshot = state(Phase.CHANTING);
         var nearby = new HashSet<UUID>();
-        for (var viewer : player.serverLevel().players()) {
-            if (viewer.distanceToSqr(player) <= 48 * 48) {
+        for (var viewer : owner.serverLevel().players()) {
+            if (viewer.distanceToSqr(owner) <= 48 * 48) {
                 PacketDistributor.sendToPlayer(viewer, snapshot);
                 nearby.add(viewer.getUUID());
             }
         }
         viewers.removeAll(nearby);
-        notifyViewers(player, Phase.INTERRUPTED);
+        notifyViewers(Phase.INTERRUPTED);
         viewers.addAll(nearby);
     }
 
-    private void notifyViewers(ServerPlayer player, Phase phase) {
-        var snapshot = state(player, phase);
+    private void notifyViewers(Phase phase) {
+        var snapshot = state(phase);
         for (UUID id : viewers) {
-            var viewer = player.serverLevel().getServer().getPlayerList().getPlayer(id);
+            var viewer = owner.serverLevel().getServer().getPlayerList().getPlayer(id);
             if (viewer != null) PacketDistributor.sendToPlayer(viewer, snapshot);
         }
         viewers.clear();
     }
 
-    private void finish(ServerPlayer player, Phase phase) {
-        ACTIVE.remove(player);
-        player.getAttribute(Attributes.MOVEMENT_SPEED).removeModifier(SLOW.id());
-        notifyViewers(player, phase);
+    private void finish(Phase phase) {
+        ACTIVE.remove(owner.getUUID(), this);
+        owner.getAttribute(Attributes.MOVEMENT_SPEED).removeModifier(SLOW.id());
+        notifyViewers(phase);
     }
 
     static void interrupt(ServerPlayer player) {
-        var session = ACTIVE.get(player);
+        var session = ACTIVE.get(player.getUUID());
         if (session != null) {
             session.chant.interrupt();
-            session.finish(player, Phase.INTERRUPTED);
+            session.finish(Phase.INTERRUPTED);
+            if (session.owner != player) {
+                player.getAttribute(Attributes.MOVEMENT_SPEED).removeModifier(SLOW.id());
+            }
         }
     }
 

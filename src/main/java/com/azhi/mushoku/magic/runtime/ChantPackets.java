@@ -1,7 +1,8 @@
 package com.azhi.mushoku.magic.runtime;
 
 import com.azhi.mushoku.Mushoku;
-import com.azhi.mushoku.client.ClientChant;
+import net.neoforged.bus.api.Event;
+import net.neoforged.neoforge.common.NeoForge;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -39,12 +40,20 @@ public final class ChantPackets {
         public Type<State> type() { return TYPE; }
     }
 
+    public static final class StateReceived extends Event {
+        public final State state;
+
+        private StateReceived(State state) {
+            this.state = state;
+        }
+    }
+
     public static void register(RegisterPayloadHandlersEvent event) {
         var registrar = event.registrar("1");
         registrar.playToServer(Start.TYPE, StreamCodec.unit(new Start()),
                 (packet, ctx) -> PlayerChants.start((ServerPlayer) ctx.player()));
         registrar.playToServer(Interrupt.TYPE, StreamCodec.unit(new Interrupt()),
                 (packet, ctx) -> PlayerChants.interrupt((ServerPlayer) ctx.player()));
-        registrar.playToClient(State.TYPE, State.CODEC, (packet, ctx) -> ClientChant.receive(packet));
+        registrar.playToClient(State.TYPE, State.CODEC, (packet, ctx) -> NeoForge.EVENT_BUS.post(new StateReceived(packet)));
     }
 }
