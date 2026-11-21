@@ -56,6 +56,7 @@ public final class PlayerChants {
         switch (session.chant.tick(mana)) {
             case COMPLETED -> {
                 PlayerMana.set(player, Mana.spend(mana, Chant.COST));
+                WaterBallEntity.launch(player);
                 session.finish(Phase.COMPLETED);
             }
             case INSUFFICIENT_MANA -> {
