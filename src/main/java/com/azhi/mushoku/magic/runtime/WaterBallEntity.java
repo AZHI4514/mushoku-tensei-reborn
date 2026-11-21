@@ -6,6 +6,7 @@ import com.azhi.mushoku.registry.ModEntities;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -22,8 +23,16 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import software.bernie.geckolib.animatable.GeoEntity;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animation.AnimatableManager;
+import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.RawAnimation;
+import software.bernie.geckolib.util.GeckoLibUtil;
 
-public final class WaterBallEntity extends Projectile {
+public final class WaterBallEntity extends Projectile implements GeoEntity {
+    private static final RawAnimation IDLE = RawAnimation.begin().thenLoop("animation.water_ball.idle");
+    private final AnimatableInstanceCache animationCache = GeckoLibUtil.createInstanceCache(this);
     private static final ResourceKey<DamageType> WATER = ResourceKey.create(Registries.DAMAGE_TYPE,
             ResourceLocation.fromNamespaceAndPath(Mushoku.MOD_ID, "water"));
     private double travelled;
@@ -32,6 +41,23 @@ public final class WaterBallEntity extends Projectile {
     public WaterBallEntity(EntityType<? extends WaterBallEntity> type, Level level) {
         super(type, level);
         setNoGravity(true);
+    }
+
+    @Override
+    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
+        controllers.add(new AnimationController<>(this, "flight", 0, state -> state.setAndContinue(IDLE)));
+    }
+
+    @Override
+    public AnimatableInstanceCache getAnimatableInstanceCache() {
+        return animationCache;
+    }
+
+    @Override
+    public void recreateFromPacket(ClientboundAddEntityPacket packet) {
+        super.recreateFromPacket(packet);
+        // Projectile restores its owner; the renderer also needs the initial flight vector.
+        setDeltaMovement(packet.getXa(), packet.getYa(), packet.getZa());
     }
 
     static void launch(ServerPlayer caster) {
