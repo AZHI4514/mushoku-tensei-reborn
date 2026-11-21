@@ -213,7 +213,7 @@
 | `DamageType` | `water` / `fire` / `wind` / `earth` | 每属性一个 |
 | `ParticleType` | 每属性 1 个基础粒子 | 视觉语言基准 |
 | `Block` | 首版无 | — |
-| `EntityType` | `projectile` | 切片 1c 新增，GeckoLib 渲染 |
+| `EntityType` | `water_ball` | 切片 1c 新增，GeckoLib 渲染 |
 
 **【待】** 法术定义方式：(a) Java 逐个注册 ／ (b) datapack JSON + codec。
 
