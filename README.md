@@ -2,8 +2,7 @@
 
 《无职转生》主题 Minecraft NeoForge mod。第一模块：魔术系统。
 
-本目录是**纯文档骨架**：不含代码与构建文件。Java/Gradle 侧由「切片 0」
-（项目骨架）的 plan 生成。
+切片 0 提供 Gradle 构建、模组入口和空物品注册表。
 
 ## 文件清单
 
@@ -16,7 +15,7 @@ docs/ROADMAP.md            模块顺序 + 设定→模块映射 + 切片路线 +
 docs/modules/magic.md      魔术模块：接口/等级矩阵/法术表/混合图/状态机/待决问题
 docs/setting-bible/        原作设定原文（7 份，**不进必读链**）
 tests/contracts.py         契约脚本（文档齐备/优先级/注册对账/法术对账）
-docs/specs/ docs/plans/    空，等切片填充
+docs/specs/ docs/plans/    各切片的规格和实施计划
 ```
 
 ## 设定是怎么切分的
@@ -32,13 +31,16 @@ docs/specs/ docs/plans/    空，等切片填充
 
 这就是「设定集 ≠ 模块文档」的落地：设定是资料，模块文档是可执行决策。
 
-## 落地到开发机
+## 本地开发
 
-1. 拷到开发机，`git init` + 首次提交（纯文档）。
-2. 装 Temurin JDK 21 + IntelliJ。
-3. 让 agent 读 AGENTS.md，下达第一片任务：
-   「写 2026-XX-XX 切片0 项目骨架的 spec+plan 并实施，完成后
-   `python tests/contracts.py` 必须通过」。
+使用 Temurin JDK 21，在仓库根目录运行以下命令。
+
+~~~powershell
+.\gradlew.bat build
+python tests/contracts.py
+~~~
+
+其他系统使用 ./gradlew。构建产物位于 build/libs。使用 runClient、runServer 或 runData 启动开发客户端、无头服务端或数据生成器。
 
 ## 还没定的（都有标记，不用现在决定）
 

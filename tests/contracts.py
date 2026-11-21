@@ -136,11 +136,11 @@ def main() -> int:
     print(f"契约检查 mod={MOD_ID} root={root}")
     errors, notes = check(root)
     for n in notes:
-        print(f"  ✓ {n}")
+        print(f"  [OK] {n}")
     if errors:
         print(f"\n{len(errors)} 个缺口:")
         for e in errors:
-            print(f"  ✗ {e}")
+            print(f"  [FAIL] {e}")
         return 1
     print("\n全部通过。")
     return 0

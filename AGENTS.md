@@ -78,7 +78,7 @@ src/main/resources/
 
 > 权威清单：只有列在这里的才算真实存在。没列 = 不存在 = 不得引用。
 
-**当前：无任何实现。**
+**当前：切片 0 项目骨架。** 已配置 Java 21、Gradle Wrapper 和 ModDevGradle，模组入口 Mushoku 挂接空物品注册表 ModItems。
 
 禁止把 ROADMAP / VISION / 模块文档里的计划描述成已实现，无论上下文多像。
 

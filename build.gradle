@@ -1,0 +1,43 @@
+plugins {
+    id 'net.neoforged.moddev' version '2.0.148'
+}
+
+group = 'com.azhi.mushoku'
+version = '0.1.0'
+
+java.toolchain {
+    languageVersion = JavaLanguageVersion.of(21)
+    vendor = JvmVendorSpec.ADOPTIUM
+}
+
+neoForge {
+    version = '21.1.267'
+    runs {
+        configureEach {
+            gameDirectory = file("runs/$name")
+        }
+        client { client() }
+        server {
+            server()
+            programArgument '--nogui'
+        }
+        data {
+            data()
+            programArguments.addAll '--mod', project.name, '--all',
+                '--output', file('src/generated/resources').absolutePath,
+                '--existing', file('src/main/resources').absolutePath
+        }
+    }
+    mods {
+        mushoku_tensei_reborn { sourceSet sourceSets.main }
+    }
+}
+
+sourceSets.main.resources.srcDir 'src/generated/resources'
+tasks.named('processResources') {
+    exclude '**/.gitkeep', '.cache/**'
+    inputs.property 'modVersion', project.version
+    filesMatching('META-INF/neoforge.mods.toml') {
+        expand modVersion: project.version
+    }
+}

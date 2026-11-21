@@ -1,0 +1,21 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="All Rights Reserved"
+
+[[mods]]
+modId="mushoku_tensei_reborn"
+version="${modVersion}"
+displayName="Mushoku Tensei Reborn"
+description="以无职转生的魔术体系为基础的 Minecraft 模组。"
+
+[[dependencies.mushoku_tensei_reborn]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.1]"
+side="BOTH"
+
+[[dependencies.mushoku_tensei_reborn]]
+modId="neoforge"
+type="required"
+versionRange="[21.1.267,21.2)"
+side="BOTH"
