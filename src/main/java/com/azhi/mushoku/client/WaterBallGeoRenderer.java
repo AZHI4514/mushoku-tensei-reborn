@@ -28,10 +28,13 @@ public final class WaterBallGeoRenderer extends GeoEntityRenderer<WaterBallEntit
     protected void applyRotations(WaterBallEntity ball, PoseStack pose, float age, float bodyYaw,
                                   float partialTick, float scale) {
         Vec3 motion = ball.getDeltaMovement();
-        if (motion.lengthSqr() == 0) return;
+        if (motion.lengthSqr() != 0) {
 
-        // Map the model's local -Z axis onto the synchronized flight vector.
-        pose.mulPose(Axis.YP.rotation((float) Math.atan2(-motion.x, -motion.z)));
-        pose.mulPose(Axis.XP.rotation((float) Math.atan2(motion.y, motion.horizontalDistance())));
+            // Map the model's local -Z axis onto the synchronized flight vector.
+            pose.mulPose(Axis.YP.rotation((float) Math.atan2(-motion.x, -motion.z)));
+            pose.mulPose(Axis.XP.rotation((float) Math.atan2(motion.y, motion.horizontalDistance())));
+        }
+        // GeckoLib 4.7.7 adds this local Y offset after applyRotations.
+        pose.translate(0, -0.01F, 0);
     }
 }
