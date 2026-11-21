@@ -10,6 +10,23 @@ java.toolchain {
     vendor = JvmVendorSpec.ADOPTIUM
 }
 
+repositories { mavenCentral() }
+
+sourceSets {
+    gameTest {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    }
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.13.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test { useJUnitPlatform() }
+
 neoForge {
     version = '21.1.267'
     runs {
@@ -21,6 +38,10 @@ neoForge {
             server()
             programArgument '--nogui'
         }
+        gameTestServer {
+            type = "gameTestServer"
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.name
+        }
         data {
             data()
             programArguments.addAll '--mod', project.name, '--all',
@@ -29,7 +50,10 @@ neoForge {
         }
     }
     mods {
-        mushoku_tensei_reborn { sourceSet sourceSets.main }
+        mushoku_tensei_reborn {
+            sourceSet sourceSets.main
+            sourceSet sourceSets.gameTest
+        }
     }
 }
 

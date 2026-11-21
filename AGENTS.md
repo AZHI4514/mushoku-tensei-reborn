@@ -78,7 +78,7 @@ src/main/resources/
 
 > 权威清单：只有列在这里的才算真实存在。没列 = 不存在 = 不得引用。
 
-**当前：切片 0 项目骨架。** 已配置 Java 21、Gradle Wrapper 和 ModDevGradle，模组入口 Mushoku 挂接空物品注册表 ModItems。
+**当前：切片 0 项目骨架与切片 0.5 测试架构。** L1 契约、L2 JUnit 5 和独立 L3 GameTest 哨兵均已跑通。 已配置 Java 21、Gradle Wrapper 和 ModDevGradle，模组入口 Mushoku 挂接空物品注册表 ModItems。
 
 禁止把 ROADMAP / VISION / 模块文档里的计划描述成已实现，无论上下文多像。
 
@@ -124,3 +124,9 @@ src/main/resources/
 1. 读本文 + `docs/PRINCIPLES.md`
 2. 按任务找模块文档 + `docs/specs/` 里最新的 spec/plan
 3. 核对「已实现边界」，再动手。交接靠文件不靠对话记忆。
+
+## 魔术代码分层与测试
+
+- `src/main/java/com/azhi/mushoku/magic/core/` 存放纯 Java 状态判断与数值计算，零 Minecraft 或 NeoForge 依赖。只靠普通 Java 输入就能算出的逻辑归入 core。
+- `src/main/java/com/azhi/mushoku/magic/runtime/` 存放 Minecraft 适配代码，读取游戏对象、调用 core 并将结果写回世界。
+- 日常运行 `./gradlew test`。交付前另行运行 `./gradlew runGameTestServer` 和 `python tests/contracts.py`。GameTest 使用独立源集 `src/gameTest/`。
