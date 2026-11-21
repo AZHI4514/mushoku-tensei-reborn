@@ -18,6 +18,14 @@ from pathlib import Path
 MOD_ID = "mushoku_tensei_reborn"
 PKG = "com/azhi/mushoku"
 
+# 同时识别字面量，避免把字符串中的 // 或 /* 当成注释起点。
+JAVA_NON_CODE = re.compile(
+    r'//[^\n]*|/\*.*?\*/|"""(?:\\.|(?!""").)*"""|"(?:\\.|[^"\\])*"|'
+    r"'(?:\\.|[^'\\])*'",
+    re.DOTALL,
+)
+GAME_PACKAGE = re.compile(r"(?<![\w$])net\s*\.\s*(minecraft|neoforged)\s*\.")
+
 
 def check(root: Path) -> tuple[list[str], list[str]]:
     errors: list[str] = []
@@ -124,6 +132,18 @@ def check(root: Path) -> tuple[list[str], list[str]]:
             errors.append(f"datapack 法术 {s}.json 未在模块文档法术表登记")
         if files:
             notes.append(f"法术文件 {len(files)} 个与文档对账")
+
+    # 9. 魔术 core 必须保持纯 Java，包含子包。
+    core = root / "src/main/java" / PKG / "magic/core"
+    for source in sorted(core.rglob("*.java")):
+        code = JAVA_NON_CODE.sub(
+            lambda token: " " + "\n" * token[0].count("\n"),
+            source.read_text(encoding="utf-8"),
+        )
+        for match in GAME_PACKAGE.finditer(code):
+            line = code.count("\n", 0, match.start()) + 1
+            errors.append(f"{source.relative_to(root).as_posix()}:{line}: "
+                          f"magic/core 禁止引用 net.{match[1]}.")
 
     return errors, notes
 

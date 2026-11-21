@@ -28,10 +28,13 @@
 ./gradlew runClient      # 开发客户端
 ./gradlew runServer      # 无头服务端
 ./gradlew runData        # datagen（模型/方块状态/语言文件）
+./gradlew test              # 单元测试，秒级，日常改完就跑
+./gradlew runGameTestServer  # GameTest，分钟级，交付前跑
 python tests/contracts.py  # 契约检查，交付前必须为 0
 ```
 
 Windows 用 `./gradlew.bat`。
+`test` 是日常反馈，`runGameTestServer` 不进常规 `build`。
 
 ## 目录地图
 
