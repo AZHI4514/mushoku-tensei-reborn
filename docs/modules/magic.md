@@ -207,7 +207,7 @@
 
 | 类型 | 条目 | 说明 |
 |---|---|---|
-| `DataAttachmentType` | `mana` / `spell_skill` / `known_spells` | 魔力、熟练度、已习得集合 |
+| `AttachmentType` | `mana` / `spell_skill` / `known_spells` | 魔力、熟练度、已习得集合 |
 | `Item` | `spell_book_*`（按属性分） | 切片 2 的法术习得媒介 |
 | `NetworkPayload` | `start_chant`（C2S） / `interrupt_chant`（C2S） / `chant_state`（S2C） | 请求开始咏唱、请求中断、同步服务端咏唱状态 |
 | `DamageType` | `water` / `fire` / `wind` / `earth` | 每属性一个 |

@@ -82,7 +82,9 @@ src/main/resources/
 
 > 权威清单：只有列在这里的才算真实存在。没列 = 不存在 = 不得引用。
 
-**当前：切片 0 项目骨架与切片 0.5 测试架构。** L1 契约、L2 JUnit 5 和独立 L3 GameTest 哨兵均已跑通。 已配置 Java 21、Gradle Wrapper 和 ModDevGradle，模组入口 Mushoku 挂接空物品注册表 ModItems。
+**当前：切片 0 项目骨架、切片 0.5 测试架构与切片 1a 魔力可见。** L1 契约、L2 JUnit 5 和独立 L3 GameTest 哨兵均已跑通。 已配置 Java 21、Gradle Wrapper 和 ModDevGradle，模组入口 Mushoku 挂接空物品注册表 ModItems。
+
+切片 1a 已交付纯 Java 魔力计算、玩家魔力附件及持有者同步、客户端快捷栏上方魔力条和权限等级 2 的 `/mushoku mana get|set` 调试命令。魔力范围为 0–100，新玩家与死亡重生时为满，重登与下界传送门往返保留数值。首次同步前隐藏 HUD。
 
 禁止把 ROADMAP / VISION / 模块文档里的计划描述成已实现，无论上下文多像。
 
