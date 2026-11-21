@@ -1,5 +1,7 @@
 package com.azhi.mushoku;
 
+import com.azhi.mushoku.magic.runtime.ChantPackets;
+import com.azhi.mushoku.magic.runtime.PlayerChants;
 import com.azhi.mushoku.magic.runtime.ManaCommands;
 import com.azhi.mushoku.magic.runtime.PlayerMana;
 import com.azhi.mushoku.registry.ModItems;
@@ -13,6 +15,11 @@ public final class Mushoku {
 
     public Mushoku(IEventBus modBus) {
         ModItems.ITEMS.register(modBus);
+        modBus.addListener(ChantPackets::register);
+        NeoForge.EVENT_BUS.addListener(PlayerChants::tick);
+        NeoForge.EVENT_BUS.addListener(PlayerChants::death);
+        NeoForge.EVENT_BUS.addListener(PlayerChants::logout);
+        NeoForge.EVENT_BUS.addListener(PlayerChants::dimensionChanged);
         PlayerMana.ATTACHMENTS.register(modBus);
         NeoForge.EVENT_BUS.addListener(PlayerMana::onLogin);
         NeoForge.EVENT_BUS.addListener(PlayerMana::onRespawn);
