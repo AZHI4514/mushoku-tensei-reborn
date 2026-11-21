@@ -1,6 +1,5 @@
 package com.azhi.mushoku.magic.runtime;
 
-import com.azhi.mushoku.Mushoku;
 import com.azhi.mushoku.magic.core.Chant;
 import com.azhi.mushoku.magic.core.Mana;
 import java.util.HashMap;
@@ -9,10 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
@@ -20,9 +16,6 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import static com.azhi.mushoku.magic.runtime.ChantPackets.Phase;
 
 public final class PlayerChants {
-    private static final AttributeModifier SLOW = new AttributeModifier(
-            ResourceLocation.fromNamespaceAndPath(Mushoku.MOD_ID, "chant_slowdown"),
-            -0.5, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
     private static final Map<UUID, PlayerChants> ACTIVE = new HashMap<>();
     private final ServerPlayer owner;
     private final Chant chant = new Chant();
@@ -39,7 +32,6 @@ public final class PlayerChants {
         if (result == Chant.Result.INSUFFICIENT_MANA) insufficientMana(player);
         if (result != Chant.Result.STARTED) return;
         ACTIVE.put(player.getUUID(), session);
-        player.getAttribute(Attributes.MOVEMENT_SPEED).addOrUpdateTransientModifier(SLOW);
         session.broadcast();
     }
 
@@ -50,7 +42,11 @@ public final class PlayerChants {
     public static void tick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         var session = ACTIVE.get(player.getUUID());
-        if (session == null || session.owner != player) return;
+        if (session == null) return;
+        if (session.owner != player) {
+            session.finish(Phase.INTERRUPTED);
+            return;
+        }
         if (!player.isAlive() || player.isSpectator()) {
             interrupt(player);
             return;
@@ -101,7 +97,6 @@ public final class PlayerChants {
 
     private void finish(Phase phase) {
         ACTIVE.remove(owner.getUUID(), this);
-        owner.getAttribute(Attributes.MOVEMENT_SPEED).removeModifier(SLOW.id());
         notifyViewers(phase);
     }
 
@@ -110,9 +105,6 @@ public final class PlayerChants {
         if (session != null) {
             session.chant.interrupt();
             session.finish(Phase.INTERRUPTED);
-            if (session.owner != player) {
-                player.getAttribute(Attributes.MOVEMENT_SPEED).removeModifier(SLOW.id());
-            }
         }
     }
 

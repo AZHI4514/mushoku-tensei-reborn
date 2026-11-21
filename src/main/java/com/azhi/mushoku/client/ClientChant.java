@@ -27,7 +27,6 @@ public final class ClientChant {
     private static final Map<Integer, Display> CASTERS = new HashMap<>();
     private static ClientLevel level;
     private static boolean held;
-    private static boolean needsRelease;
 
     private ClientChant() {}
 
@@ -35,7 +34,9 @@ public final class ClientChant {
         if (level != current) {
             level = current;
             CASTERS.clear();
-            needsRelease = KEY.isDown();
+            while (KEY.consumeClick()) {
+                // Discard presses queued in the previous world.
+            }
             held = false;
         }
     }
@@ -63,12 +64,15 @@ public final class ClientChant {
         useLevel(mc.level);
         if (level == null || mc.player == null) return;
         boolean down = KEY.isDown() && mc.screen == null;
-        if (!KEY.isDown()) needsRelease = false;
-        boolean pressed = down && !needsRelease && mc.player.isAlive();
-        if (pressed != held) {
-            if (pressed) PacketDistributor.sendToServer(new ChantPackets.Start());
-            else PacketDistributor.sendToServer(new ChantPackets.Interrupt());
-            held = pressed;
+        while (KEY.consumeClick()) {
+            if (down && !held && mc.player.isAlive()) {
+                PacketDistributor.sendToServer(new ChantPackets.Start());
+                held = true;
+            }
+        }
+        if (held && (!down || !mc.player.isAlive())) {
+            PacketDistributor.sendToServer(new ChantPackets.Interrupt());
+            held = false;
         }
         if (mc.isPaused()) return;
         var staleIds = new ArrayList<Integer>();
