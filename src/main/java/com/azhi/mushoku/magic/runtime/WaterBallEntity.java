@@ -2,6 +2,7 @@ package com.azhi.mushoku.magic.runtime;
 
 import com.azhi.mushoku.Mushoku;
 import com.azhi.mushoku.magic.core.WaterBallFlight;
+import com.azhi.mushoku.magic.core.CastGeometry;
 import com.azhi.mushoku.registry.ModEntities;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
@@ -64,15 +65,17 @@ public final class WaterBallEntity extends Projectile implements GeoEntity {
         ServerLevel level = caster.serverLevel();
         var ball = new WaterBallEntity(ModEntities.WATER_BALL.get(), level);
         Vec3 forward = caster.getLookAngle();
-        double yaw = Math.toRadians(caster.getYRot());
-        Vec3 hand = caster.getEyePosition().add(-Math.cos(yaw) * 0.32, -0.55, -Math.sin(yaw) * 0.32);
-        // Avoid spawning beyond a wall when the hand is pressed against it.
-        Vec3 muzzle = hand.add(forward.scale(0.25));
-        var obstruction = level.clip(new ClipContext(caster.getEyePosition(), muzzle,
+        Vec3 eye = caster.getEyePosition();
+        Vec3 hand = CastAnchor.hand(caster);
+        Vec3 end = eye.add(forward.scale(WaterBallFlight.RANGE));
+        Vec3 target = ball.nearestHit(level, eye, end, caster).getLocation();
+        var direction = CastGeometry.aim(CastAnchor.vector(forward), CastAnchor.vector(target.subtract(hand)),
+                eye.distanceTo(target));
+        var obstruction = level.clip(new ClipContext(eye, hand,
                 ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, caster));
         ball.setOwner(caster);
         ball.setPos(obstruction.getLocation());
-        ball.setDeltaMovement(forward.scale(WaterBallFlight.SPEED));
+        ball.setDeltaMovement(new Vec3(direction.x(), direction.y(), direction.z()).scale(WaterBallFlight.SPEED));
         level.addFreshEntity(ball);
         if (obstruction.getType() == HitResult.Type.BLOCK) ball.impact(level, obstruction);
     }
@@ -90,7 +93,7 @@ public final class WaterBallEntity extends Projectile implements GeoEntity {
         Vec3 start = position();
         Vec3 motion = getDeltaMovement().normalize().scale(step);
         Vec3 end = start.add(motion);
-        HitResult hit = nearestHit(level, start, end);
+        HitResult hit = nearestHit(level, start, end, getOwner());
         if (hit.getType() != HitResult.Type.MISS) {
             impact(level, hit);
             return;
@@ -101,14 +104,14 @@ public final class WaterBallEntity extends Projectile implements GeoEntity {
         if (WaterBallFlight.remainingDistance(travelled) == 0) discard();
     }
 
-    private HitResult nearestHit(ServerLevel level, Vec3 start, Vec3 end) {
+    private HitResult nearestHit(ServerLevel level, Vec3 start, Vec3 end, Entity excluded) {
         HitResult nearest = level.clip(new ClipContext(start, end,
                 ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this));
         double limit = nearest.getType() == HitResult.Type.MISS
                 ? Double.POSITIVE_INFINITY : start.distanceToSqr(nearest.getLocation());
         // Pad only the broad phase so targets touching the endpoint are considered.
         AABB candidates = new AABB(start, end).inflate(1.0E-7);
-        for (Entity target : level.getEntities(this, candidates, e -> !ownedBy(e) && canHitEntity(e))) {
+        for (Entity target : level.getEntities(this, candidates, e -> e != excluded && canHitEntity(e))) {
             AABB box = target.getBoundingBox();
             Vec3 point = box.contains(start) ? start : box.clip(start, end).orElse(null);
             if (point == null && box.distanceToSqr(end) == 0) point = end;

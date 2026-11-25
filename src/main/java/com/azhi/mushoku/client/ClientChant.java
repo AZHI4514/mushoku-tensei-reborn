@@ -1,15 +1,15 @@
 package com.azhi.mushoku.client;
 
 import com.azhi.mushoku.Mushoku;
+import com.azhi.mushoku.magic.runtime.CastAnchor;
 import com.azhi.mushoku.magic.runtime.ChantPackets;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -23,8 +23,7 @@ import org.lwjgl.glfw.GLFW;
 public final class ClientChant {
     private static final KeyMapping KEY = new KeyMapping("key.mushoku_tensei_reborn.chant",
             GLFW.GLFW_KEY_R, "key.categories.gameplay");
-    private record Display(long receivedAt, int remaining, int total) {}
-    private static final Map<Integer, Display> CASTERS = new HashMap<>();
+    private static final Set<Integer> CASTERS = new HashSet<>();
     private static ClientLevel level;
     private static boolean held;
 
@@ -47,7 +46,7 @@ public final class ClientChant {
         useLevel(Minecraft.getInstance().level);
         if (level == null) return;
         if (state.phase() == ChantPackets.Phase.CHANTING) {
-            CASTERS.put(state.casterId(), new Display(level.getGameTime(), state.remainingTicks(), state.totalTicks()));
+            CASTERS.add(state.casterId());
         } else {
             CASTERS.remove(state.casterId());
         }
@@ -76,21 +75,14 @@ public final class ClientChant {
         }
         if (mc.isPaused()) return;
         var staleIds = new ArrayList<Integer>();
-        CASTERS.forEach((id, display) -> {
+        CASTERS.forEach(id -> {
             if (!(level.getEntity(id) instanceof Player caster)) {
                 staleIds.add(id);
                 return;
             }
-            double elapsed = display.total - display.remaining + level.getGameTime() - display.receivedAt;
-            double progress = Math.clamp(elapsed / display.total, 0.0, 1.0);
-            double yaw = Math.toRadians(caster.yBodyRot);
-            double side = caster.getMainArm() == HumanoidArm.RIGHT ? -0.32 : 0.32;
-            double reach = 0.25 + 0.12 * progress;
-            level.addParticle(ParticleTypes.SPLASH,
-                    caster.getX() + Math.cos(yaw) * side - Math.sin(yaw) * reach,
-                    caster.getEyeY() - 0.55,
-                    caster.getZ() + Math.sin(yaw) * side + Math.cos(yaw) * reach, 0, 0, 0);
+            var hand = CastAnchor.hand(caster);
+            level.addParticle(ParticleTypes.SPLASH, hand.x, hand.y, hand.z, 0, 0, 0);
         });
-        staleIds.forEach(CASTERS::remove);
+        CASTERS.removeAll(staleIds);
     }
 }

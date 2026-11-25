@@ -1,0 +1,44 @@
+// Apply with -I dev/anchor/sampling.gradle -PanchorSamples=true for client/server runs.
+allprojects { project ->
+    if (providers.gradleProperty('anchorSamples').orNull != 'true') return
+    def qaBuild = file('build/anchor-sampling')
+    layout.buildDirectory.set(qaBuild)
+    def generated = new File(qaBuild, 'sampled-main')
+    afterEvaluate {
+        def source = file('src/main/java')
+        def hooks = [
+            'ClientChant.java': [
+                'level.addParticle(ParticleTypes.SPLASH,': 'com.azhi.mushoku.dev.AnchorSamples.particle(caster, hand, level, ParticleTypes.SPLASH,',
+                'PacketDistributor.sendToServer(new ChantPackets.Interrupt());': 'com.azhi.mushoku.dev.AnchorSamples.note(mc.player, "interrupt_tx"); PacketDistributor.sendToServer(new ChantPackets.Interrupt());',
+                'PacketDistributor.sendToServer(new ChantPackets.Start());': 'com.azhi.mushoku.dev.AnchorSamples.note(mc.player, "start_tx"); PacketDistributor.sendToServer(new ChantPackets.Start());'
+            ],
+            'WaterBallEntity.java': [
+                'level.addFreshEntity(ball);': 'com.azhi.mushoku.dev.AnchorSamples.launch(caster, hand, target, ball); level.addFreshEntity(ball);',
+                'Vec3 point = hit.getLocation();': 'Vec3 point = hit.getLocation(); com.azhi.mushoku.dev.AnchorSamples.impact(this, point);'
+            ],
+            'PlayerChants.java': [
+                'if (session.owner != player)': 'com.azhi.mushoku.dev.AnchorSamples.note(player, "active"); if (session.owner != player)',
+                'ACTIVE.remove(owner.getUUID(), this);': 'com.azhi.mushoku.dev.AnchorSamples.note(owner, phase.name()); ACTIVE.remove(owner.getUUID(), this);'
+            ]
+        ]
+        def generate = tasks.register('prepareAnchorSampling', Sync) {
+            from(source)
+            into(generated)
+            inputs.file(file('dev/anchor/sampling.gradle'))
+            filteringCharset = 'UTF-8'
+            filesMatching('**/*.java') { details ->
+                def replacements = hooks[details.name]
+                if (replacements) {
+                    def original = new File(source, details.path).getText('UTF-8')
+                    replacements.keySet().each { needle ->
+                        if (original.count(needle) != 1) throw new GradleException("Sampling point changed: " + needle)
+                    }
+                    filter { line -> replacements.inject(line) { text, pair -> text.replace(pair.key, pair.value) } }
+                }
+            }
+        }
+        sourceSets.main.java.setSrcDirs([generated, file('dev/anchor/java')])
+        tasks.named('compileJava') { dependsOn generate }
+        tasks.named('jar') { doFirst { throw new GradleException('Sampling builds are for development runs only') } }
+    }
+}
