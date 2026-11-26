@@ -3,6 +3,6 @@
   "minVersion": "0.8",
   "package": "com.azhi.mushoku.client.mixin",
   "compatibilityLevel": "JAVA_21",
-  "client": ["PlayerModelMixin"],
+  "client": ["PlayerModelMixin", "HandCameraAccess", "ParticleOriginAccess"],
   "injectors": { "defaultRequire": 1 }
 }

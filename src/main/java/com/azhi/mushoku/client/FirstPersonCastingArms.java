@@ -40,29 +40,39 @@ public final class FirstPersonCastingArms {
         lastPass = pose;
         var renderer = (PlayerRenderer) mc.getEntityRenderDispatcher().<AbstractClientPlayer>getRenderer(player);
         var model = renderer.getModel();
-        float bodyYaw = Mth.rotLerp(partial, player.yBodyRotO, player.yBodyRot);
         model.setupAnim(player, player.walkAnimation.position(partial), player.walkAnimation.speed(partial),
                 player.tickCount + partial, 0, player.getViewXRot(partial));
         pose.pushPose();
-        pose.mulPose(Axis.XP.rotationDegrees(player.getViewXRot(partial)));
-        pose.mulPose(Axis.YP.rotationDegrees(player.getViewYRot(partial) - bodyYaw));
-        pose.translate(0, -player.getEyeHeight() - (player.isCrouching() ? 0.125 * player.getScale() : 0), 0);
-        float scale = (float) CastGeometry.PLAYER_MODEL_SCALE * player.getScale();
+        // Undo ItemInHandRenderer's turn lag in reverse order. Keep camera bob and hurt transforms.
+        float lagYaw = player.getViewYRot(partial) - Mth.lerp(partial, player.yBobO, player.yBob);
+        float lagPitch = player.getViewXRot(partial) - Mth.lerp(partial, player.xBobO, player.xBob);
+        pose.mulPose(Axis.YP.rotationDegrees(-lagYaw * 0.1f));
+        pose.mulPose(Axis.XP.rotationDegrees(-lagPitch * 0.1f));
+        Vector3f target = cameraPalm(player, partial);
+        Vector3f palm = modelPalm(model, player);
+        pose.translate(target.x, target.y, target.z);
+        float scale = (float) CastGeometry.PLAYER_MODEL_SCALE * 0.68f;
         pose.scale(-scale, -scale, scale);
-        pose.translate(0, -CastGeometry.MODEL_ORIGIN, 0);
-        // Foreshorten the first-person arms about the physical palm so the supporting
-        // hand and both held items fit in the hand pass without moving the muzzle.
-        PoseStack palmPose = new PoseStack();
-        model.rightArm.translateAndRotate(palmPose);
-        float palmX = player.getSkin().model() == PlayerSkin.Model.SLIM ? -0.5f : -1;
-        Vector3f palm = palmPose.last().pose().transformPosition(new Vector3f(palmX / 16, 10f / 16, 0));
-        pose.translate(palm.x, palm.y, palm.z);
-        pose.mulPose(Axis.XP.rotationDegrees(58 * ClientChant.weight(player, partial)));
-        pose.scale(0.55f, 0.55f, 0.55f);
+        // The shoulders extend towards the near, lower edges of the hand pass.
+        pose.mulPose(Axis.XP.rotationDegrees(-25));
         pose.translate(-palm.x, -palm.y, -palm.z);
         drawHand(event, player, model, HumanoidArm.RIGHT);
         drawHand(event, player, model, HumanoidArm.LEFT);
         pose.popPose();
+    }
+
+    static Vector3f cameraPalm(AbstractClientPlayer player, float partial) {
+        // Camera-space grip for the hand pass. Both endpoints lie in front of the near plane
+        // throughout lift and release, so even an immediate launch has a visible origin.
+        float weight = ClientChant.weight(player, partial);
+        return new Vector3f(Mth.lerp(weight, 0.28f, 0.13f), Mth.lerp(weight, -0.34f, -0.25f), -0.60f);
+    }
+
+    private static Vector3f modelPalm(PlayerModel<?> model, AbstractClientPlayer player) {
+        PoseStack palmPose = new PoseStack();
+        model.rightArm.translateAndRotate(palmPose);
+        float palmX = player.getSkin().model() == PlayerSkin.Model.SLIM ? -0.5f : -1;
+        return palmPose.last().pose().transformPosition(new Vector3f(palmX / 16, 10f / 16, 0));
     }
 
     private static void drawHand(RenderHandEvent event, AbstractClientPlayer player,

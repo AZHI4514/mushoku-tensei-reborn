@@ -7,6 +7,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.client.renderer.culling.Frustum;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -22,6 +23,16 @@ public final class WaterBallGeoRenderer extends GeoEntityRenderer<WaterBallEntit
     @SubscribeEvent
     public static void register(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ModEntities.WATER_BALL.get(), WaterBallGeoRenderer::new);
+    }
+
+    @Override
+    public boolean shouldRender(WaterBallEntity ball, Frustum frustum, double x, double y, double z) {
+        return FirstPersonCastEffects.presenting(ball) || super.shouldRender(ball, frustum, x, y, z);
+    }
+
+    @Override
+    public Vec3 getRenderOffset(WaterBallEntity ball, float partial) {
+        return super.getRenderOffset(ball, partial).add(FirstPersonCastEffects.offset(ball));
     }
 
     @Override

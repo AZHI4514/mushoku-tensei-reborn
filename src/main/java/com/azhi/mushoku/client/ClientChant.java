@@ -57,6 +57,9 @@ public final class ClientChant {
             CASTERS.compute(state.casterId(), (id, old) -> new Motion(
                     old == null || old.releasing() ? start : Math.min(old.since(), start), false, 0));
         } else {
+            if (Minecraft.getInstance().player != null && Minecraft.getInstance().player.getId() == state.casterId()) {
+                FirstPersonCastEffects.stopSplashes();
+            }
             long now = level.getGameTime();
             CASTERS.computeIfPresent(state.casterId(), (id, old) -> old.releasing() ? old
                     : new Motion(now, true, old.weight(now, 0)));
@@ -98,7 +101,11 @@ public final class ClientChant {
             if (motion.releasing()) return weight <= 0;
             var hand = CastAnchor.hand(caster, 1, weight);
             if (level.tickRateManager().runsNormally()) {
-                level.addParticle(ParticleTypes.SPLASH, hand.x, hand.y, hand.z, 0, 0, 0);
+                if (caster == mc.player && FirstPersonCastEffects.localView()) {
+                    FirstPersonCastEffects.requestSplash();
+                } else {
+                    level.addParticle(ParticleTypes.SPLASH, hand.x, hand.y, hand.z, 0, 0, 0);
+                }
             }
             return false;
         });
