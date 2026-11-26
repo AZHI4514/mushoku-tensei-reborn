@@ -8,7 +8,7 @@ import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
-import net.minecraft.world.entity.HumanoidArm;
+import com.azhi.mushoku.client.ClientChant;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -45,7 +45,9 @@ public final class PalmSampler extends RenderLayer<AbstractClientPlayer, PlayerM
                        float swing, float amplitude, float partial, float age, float yaw, float pitch) {
         long tick = p.level().getGameTime();
         if (renderedPlayer != p.getId() || Long.valueOf(tick).equals(lastTick.put(p.getId(), tick))) return;
-        var arm = p.getMainArm() == HumanoidArm.RIGHT ? getParentModel().rightArm : getParentModel().leftArm;
+        float weight = ClientChant.weight(p, partial);
+        if (weight <= 0) return;
+        var arm = getParentModel().rightArm;
         var cube = arm.getRandomCube(net.minecraft.util.RandomSource.create(0));
         pose.pushPose();
         arm.translateAndRotate(pose);
@@ -53,9 +55,9 @@ public final class PalmSampler extends RenderLayer<AbstractClientPlayer, PlayerM
         new Matrix4f(inverseEntityPose).mul(pose.last().pose()).transformPosition(end);
         pose.popPose();
         Vec3 palm = p.getPosition(partial).add(end.x, end.y, end.z);
-        Vec3 hand = CastAnchor.hand(p, partial);
-        AnchorSamples.LOG.info("ANCHOR palm player={} tick={} partial={} yaw={} pitch={} main={} phase={} amp={} pos={} palm={} H={} error={}",
+        Vec3 hand = CastAnchor.hand(p, partial, weight);
+        AnchorSamples.LOG.info("ANCHOR palm player={} tick={} partial={} yaw={} pitch={} main={} weight={} amp={} pos={} palm={} H={} error={}",
                 p.getScoreboardName(), tick, partial, p.getViewYRot(partial), p.getViewXRot(partial), p.getMainArm(),
-                swing, amplitude, p.getPosition(partial), palm, hand, palm.distanceTo(hand));
+                weight, amplitude, p.getPosition(partial), palm, hand, palm.distanceTo(hand));
     }
 }

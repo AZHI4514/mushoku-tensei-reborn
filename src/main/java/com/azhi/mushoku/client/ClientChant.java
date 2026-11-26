@@ -3,9 +3,9 @@ package com.azhi.mushoku.client;
 import com.azhi.mushoku.Mushoku;
 import com.azhi.mushoku.magic.runtime.CastAnchor;
 import com.azhi.mushoku.magic.runtime.ChantPackets;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
+import com.azhi.mushoku.magic.core.CastingPose;
+import java.util.HashMap;
+import java.util.Map;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -23,7 +23,14 @@ import org.lwjgl.glfw.GLFW;
 public final class ClientChant {
     private static final KeyMapping KEY = new KeyMapping("key.mushoku_tensei_reborn.chant",
             GLFW.GLFW_KEY_R, "key.categories.gameplay");
-    private static final Set<Integer> CASTERS = new HashSet<>();
+    private record Motion(long since, boolean releasing, float initialWeight) {
+        float weight(long tick, float partial) {
+            float elapsed = tick - since + partial;
+            return releasing ? CastingPose.lower(initialWeight, elapsed) : CastingPose.lift(elapsed);
+        }
+    }
+
+    private static final Map<Integer, Motion> CASTERS = new HashMap<>();
     private static ClientLevel level;
     private static boolean held;
 
@@ -46,10 +53,20 @@ public final class ClientChant {
         useLevel(Minecraft.getInstance().level);
         if (level == null) return;
         if (state.phase() == ChantPackets.Phase.CHANTING) {
-            CASTERS.add(state.casterId());
+            long start = level.getGameTime() - (state.totalTicks() - state.remainingTicks());
+            CASTERS.compute(state.casterId(), (id, old) -> new Motion(
+                    old == null || old.releasing() ? start : Math.min(old.since(), start), false, 0));
         } else {
-            CASTERS.remove(state.casterId());
+            long now = level.getGameTime();
+            CASTERS.computeIfPresent(state.casterId(), (id, old) -> old.releasing() ? old
+                    : new Motion(now, true, old.weight(now, 0)));
         }
+    }
+
+    public static float weight(Player player, float partial) {
+        if (player.level() != level || !player.isAlive()) return 0;
+        var motion = CASTERS.get(player.getId());
+        return motion == null ? 0 : motion.weight(level.getGameTime(), partial);
     }
 
     @SubscribeEvent
@@ -74,15 +91,16 @@ public final class ClientChant {
             held = false;
         }
         if (mc.isPaused()) return;
-        var staleIds = new ArrayList<Integer>();
-        CASTERS.forEach(id -> {
-            if (!(level.getEntity(id) instanceof Player caster)) {
-                staleIds.add(id);
-                return;
+        CASTERS.entrySet().removeIf(entry -> {
+            if (!(level.getEntity(entry.getKey()) instanceof Player caster) || !caster.isAlive()) return true;
+            var motion = entry.getValue();
+            float weight = motion.weight(level.getGameTime(), 0);
+            if (motion.releasing()) return weight <= 0;
+            var hand = CastAnchor.hand(caster, 1, weight);
+            if (level.tickRateManager().runsNormally()) {
+                level.addParticle(ParticleTypes.SPLASH, hand.x, hand.y, hand.z, 0, 0, 0);
             }
-            var hand = CastAnchor.hand(caster);
-            level.addParticle(ParticleTypes.SPLASH, hand.x, hand.y, hand.z, 0, 0, 0);
+            return false;
         });
-        CASTERS.removeAll(staleIds);
     }
 }

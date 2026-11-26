@@ -10,14 +10,27 @@ public final class CastGeometry {
         public Vector unit() { return times(1 / length()); }
     }
 
-    public static Vector handOffset(Vector forward, double yawDegrees, boolean rightHanded) {
-        double yaw = Math.toRadians(yawDegrees);
-        Vector right = new Vector(-Math.cos(yaw), 0, -Math.sin(yaw));
-        Vector up = new Vector(right.y * forward.z - right.z * forward.y,
-                right.z * forward.x - right.x * forward.z, right.x * forward.y - right.y * forward.x);
-        // The shoulder hangs below the eye even when the player looks up.
-        return right.times(rightHanded ? 0.37 : -0.37).plus(new Vector(0, -0.82, 0))
-                .plus(up.times(-0.06)).plus(forward.times(0.07));
+    public static final double PLAYER_MODEL_SCALE = 0.9375;
+    public static final double MODEL_ORIGIN = 1.501;
+    public static final float RIGHT_TURN = -0.38f;
+
+    public static float rightArmPitch(float weight, float restingPitch) {
+        return (float) (restingPitch + weight * (-Math.PI / 2 - restingPitch));
+    }
+
+    /** Right palm relative to the feet, following the vanilla model's Y-X arm rotations. */
+    public static Vector palmOffset(double bodyYaw, float weight, float restingPitch, boolean crouching) {
+        double pitch = rightArmPitch(weight, restingPitch);
+        double turn = RIGHT_TURN * weight;
+        double z = 10 * Math.sin(pitch);
+        double modelX = -5 - Math.cos(turn) + z * Math.sin(turn);
+        double modelZ = Math.sin(turn) + z * Math.cos(turn);
+        double modelY = (crouching ? 5.2 : 2) + 10 * Math.cos(pitch);
+        double yaw = Math.toRadians(bodyYaw);
+        double unit = PLAYER_MODEL_SCALE / 16;
+        return new Vector(unit * (modelX * Math.cos(yaw) + modelZ * Math.sin(yaw)),
+                PLAYER_MODEL_SCALE * MODEL_ORIGIN - unit * modelY - (crouching ? 0.125 : 0),
+                unit * (modelX * Math.sin(yaw) - modelZ * Math.cos(yaw)));
     }
 
     public static Vector aim(Vector look, Vector handToTarget, double eyeDistance) {

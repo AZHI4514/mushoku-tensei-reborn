@@ -66,7 +66,7 @@ public final class WaterBallEntity extends Projectile implements GeoEntity {
         var ball = new WaterBallEntity(ModEntities.WATER_BALL.get(), level);
         Vec3 forward = caster.getLookAngle();
         Vec3 eye = caster.getEyePosition();
-        Vec3 hand = CastAnchor.hand(caster);
+        Vec3 hand = CastAnchor.hand(caster, 1, 1);
         Vec3 end = eye.add(forward.scale(WaterBallFlight.RANGE));
         Vec3 target = ball.nearestHit(level, eye, end, caster).getLocation();
         var direction = CastGeometry.aim(CastAnchor.vector(forward), CastAnchor.vector(target.subtract(hand)),
